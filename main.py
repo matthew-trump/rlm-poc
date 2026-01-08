@@ -1,11 +1,14 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.responses import JSONResponse
 from pathlib import Path
+from contextlib import asynccontextmanager
 import json
 import os
+from dotenv import load_dotenv
 from rlm_session import REPLSession, SimpleRLM
 
-app = FastAPI(title="RLM Proof of Concept")
+# Load environment variables from .env file
+load_dotenv()
 
 # Configuration
 UPLOAD_DIR = Path("./uploads")
@@ -17,6 +20,19 @@ if not ANTHROPIC_API_KEY:
 
 # Simple in-memory storage (in production, use Redis or DB)
 active_sessions = {}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events"""
+    # Startup
+    yield
+    # Shutdown - clean up all sessions
+    for doc_id in list(active_sessions.keys()):
+        active_sessions[doc_id]['session'].cleanup()
+
+
+app = FastAPI(title="RLM Proof of Concept", lifespan=lifespan)
 
 
 @app.get("/")
@@ -111,11 +127,21 @@ async def query_document(
                 'code': code,
                 'output': result['stdout'] if result['success'] else f"ERROR: {result['stderr']}"
             })
-            
-            # Check if we have enough info (simple heuristic)
-            if result['success'] and result['stdout'].strip():
-                # If output looks substantial, we might be done
-                if len(result['stdout']) > 20:
+
+            # Improved stopping: run minimum 2 iterations, stop if we see actual data values
+            if i >= 1 and result['success']:
+                output = result['stdout']
+                output_lower = output.lower()
+
+                # Stop if we see currency symbols (strong indicator of actual values)
+                if '$' in output or '€' in output or '£' in output:
+                    break
+
+                # Or if we see key-value pairs with revenue/profit data
+                has_data_keyword = any(kw in output_lower for kw in ['revenue:', 'profit:', 'expenses:', 'total:'])
+                has_number_with_unit = any(unit in output for unit in ['M', 'K', 'million', 'thousand'])
+
+                if has_data_keyword and has_number_with_unit:
                     break
         
         # Formulate final answer
@@ -142,10 +168,3 @@ def cleanup_session(doc_id: str):
         return {"message": f"Session for {doc_id} cleaned up"}
     
     return {"message": "No active session found"}
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    """Clean up all sessions on shutdown"""
-    for doc_id in list(active_sessions.keys()):
-        active_sessions[doc_id]['session'].cleanup()

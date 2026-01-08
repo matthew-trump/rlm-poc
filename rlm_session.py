@@ -5,11 +5,21 @@ from typing import Optional
 
 class REPLSession:
     """Manages a sandboxed Python REPL for document exploration"""
-    
+
     def __init__(self, document_path: str):
         self.client = docker.from_env()
         self.document_path = document_path
         self.container = None
+        self.init_code = """
+import json
+import re
+from collections import Counter
+
+# Load the document
+with open('/doc.json') as f:
+    doc = json.load(f)
+
+"""
         
     def start(self):
         """Spin up isolated container with document mounted"""
@@ -29,28 +39,20 @@ class REPLSession:
                 abs_path: {'bind': '/doc.json', 'mode': 'ro'}
             }
         )
-        
-        # Initialize with common imports and load document
-        init_code = """
-import json
-import re
-from collections import Counter
 
-# Load the document
-with open('/doc.json') as f:
-    doc = json.load(f)
-"""
-        self.execute(init_code)
         print("✓ REPL session initialized")
         
     def execute(self, code: str, timeout: int = 10) -> dict:
         """Execute code in the REPL and return output"""
         if not self.container:
             raise RuntimeError("Session not started")
-        
+
+        # Prepend initialization code to ensure doc is available
+        full_code = self.init_code + code
+
         try:
             result = self.container.exec_run(
-                cmd=['python', '-c', code],
+                cmd=['python', '-c', full_code],
                 stdout=True,
                 stderr=True,
                 demux=True  # Separate stdout and stderr
