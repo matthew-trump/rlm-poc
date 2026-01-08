@@ -111,13 +111,91 @@ print(doc['quarters']['Q3'])
 - ✅ Docker-based REPL sessions
 - ✅ Basic exploration loop with Claude
 - ✅ Query endpoint returns exploration steps + final answer
+- ✅ Environment variable configuration with .env
+- ✅ Intelligent stopping criteria (detects currency symbols and financial data)
 
-**Limitations:**
-- Single user (no auth)
-- In-memory session storage (lost on restart)
-- Only JSON documents supported
-- Simple stopping criteria (fixed max iterations)
-- No frontend UI
+## POC Limitations
+
+**This is a proof-of-concept implementation to demonstrate the RLM pattern. It is NOT production-ready.** Here's what distinguishes this POC from a production system:
+
+### Architecture Limitations
+- **In-memory storage**: Sessions stored in dictionary, lost on server restart
+- **No persistence**: No database or Redis for session/document management
+- **Synchronous processing**: Blocks server thread during exploration (no async workers)
+- **Single-threaded**: Cannot handle concurrent queries efficiently
+- **No horizontal scaling**: Cannot distribute load across multiple servers
+
+### Functionality Gaps
+- **JSON only**: No support for CSV, text, PDF, or other document formats
+- **Fixed iteration limit**: Hardcoded max_iterations=5, not adaptive
+- **Basic stopping logic**: Simple heuristics, not ML-based or context-aware
+- **No retry/recovery**: Failed code generation or execution stops the query
+- **No streaming**: Client waits for entire exploration to complete
+- **No caching**: Same query on same document re-executes everything
+
+### Security & Isolation
+- **Basic Docker sandbox**: Not hardened for adversarial code execution
+- **No code validation**: Generated Python code executed without static analysis
+- **No authentication**: Anyone can upload/query documents
+- **No authorization**: No user roles or document permissions
+- **No rate limiting**: No protection against abuse or DoS
+- **No resource quotas**: No per-user container limits
+- **Network disabled only**: Container could be further restricted (filesystem, syscalls)
+
+### Scalability Concerns
+- **No container pooling**: Spawns new container for every document, slow startup
+- **No container reuse**: Destroys container after each session cleanup
+- **No load balancing**: Single server handles all requests
+- **Memory leaks possible**: Active sessions not cleaned up on crashes
+- **No backpressure**: Queue grows unbounded under load
+
+### Observability & Operations
+- **Console logging only**: No structured logs (JSON) for aggregation
+- **No metrics**: No Prometheus/Grafana monitoring of latency, errors, costs
+- **No tracing**: Cannot track request flow through system
+- **No alerting**: No notifications on failures or anomalies
+- **No cost tracking**: No monitoring of Anthropic API usage per query/user
+- **Debug output**: Prints to console instead of proper logging framework
+
+### Production Features Missing
+- **Session persistence**: Should use Redis or PostgreSQL
+- **Document preprocessing**: Should validate, normalize, and optimize documents
+- **Result caching**: Should cache identical queries on same document
+- **Multi-document queries**: Cannot query across multiple documents
+- **Model fallback**: No retry with different model on failure
+- **Prompt optimization**: Fixed system prompts, not tuned or versioned
+- **Document versioning**: No tracking of document changes over time
+- **Audit logging**: No record of who queried what, when
+- **Cost budgets**: No per-user spending limits
+- **Graceful degradation**: No fallback when Docker unavailable
+
+### API Limitations
+- **No pagination**: Returns all exploration steps regardless of size
+- **No filtering**: Cannot filter which exploration steps to return
+- **No versioning**: API contract can break without warning
+- **No webhooks**: No async notification when query completes
+- **Form encoding only**: Should support JSON request bodies
+- **No batch operations**: Cannot process multiple queries at once
+
+### Testing & Quality
+- **No unit tests**: Code untested beyond manual curl commands
+- **No integration tests**: Docker/API interactions not validated
+- **No load tests**: Unknown behavior under concurrent load
+- **No CI/CD**: No automated testing or deployment pipeline
+- **No code coverage**: Don't know what's tested vs untested
+
+**Use this POC to:**
+- ✅ Understand the RLM pattern
+- ✅ Experiment with document exploration strategies
+- ✅ Prototype queries on structured data
+- ✅ Compare RLM vs RAG approaches
+
+**Do NOT use this POC for:**
+- ❌ Production applications
+- ❌ Sensitive or confidential documents
+- ❌ Multi-user systems
+- ❌ High-availability services
+- ❌ Systems requiring audit trails
 
 ## Next Steps
 
