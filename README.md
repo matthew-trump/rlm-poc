@@ -221,13 +221,15 @@ rlm-poc/
 ├── .env.example         # Environment variable template
 ├── test_financial.json  # Sample document
 ├── uploads/             # Uploaded documents (gitignored)
+├── README.md            # This file
 ├── CLAUDE.md            # Detailed documentation
-└── README.md            # This file
+└── DOCKERIZING.md       # Docker-in-Docker setup guide
 ```
 
 ## Documentation
 
 - **[CLAUDE.md](./CLAUDE.md)** - Detailed implementation guide, POC limitations, and future roadmap
+- **[DOCKERIZING.md](./DOCKERIZING.md)** - Guide to running this app in Docker (Docker-in-Docker complications and solutions)
 - **[RLM Paper](https://arxiv.org/abs/2501.00083)** - Original research on Recursive Language Models
 - **[FastAPI Docs](https://fastapi.tiangolo.com/)** - Web framework documentation
 - **[Anthropic API](https://docs.anthropic.com/)** - Claude integration guide
