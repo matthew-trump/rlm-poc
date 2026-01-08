@@ -1,0 +1,22 @@
+{
+  "company": "TechCorp",
+  "quarters": {
+    "Q1": {
+      "revenue": "$1.2M",
+      "expenses": "$800K",
+      "profit": "$400K"
+    },
+    "Q2": {
+      "revenue": "$1.8M",
+      "expenses": "$1.0M",
+      "profit": "$800K"
+    },
+    "Q3": {
+      "revenue": "$2.1M",
+      "expenses": "$1.2M",
+      "profit": "$900K"
+    }
+  },
+  "employees": 45,
+  "departments": ["Engineering", "Sales", "Marketing"]
+}
